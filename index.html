@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoursePro: Curso de Orientación Profesional</title>
+    <!-- Incluir Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de colores personalizados y fuentes -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        :root {
+            --color-primary: #2a6aff; /* Azul Universitario */
+            --color-accent: #ff8500;  /* Naranja de Acento */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        /* Clases de utilidad para los colores personalizados */
+        .bg-primary { background-color: var(--color-primary); }
+        .text-primary { color: var(--color-primary); }
+        .border-primary { border-color: var(--color-primary); }
+        .hover\:bg-primary-dark:hover { background-color: #1a5eff; /* Un poco más oscuro */ }
+
+        .bg-accent { background-color: var(--color-accent); }
+        .text-accent { color: var(--color-accent); }
+        .border-accent { border-color: var(--color-accent); }
+        .hover\:bg-accent-dark:hover { background-color: #e67a00; /* Un poco más oscuro */ }
+
+        /* Animaciones y Estilos Profesionales */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .content-area {
+            transition: margin-left 0.3s ease-in-out;
+        }
+        .card {
+            border-radius: 1rem; /* Esquinas más redondeadas */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px); /* Efecto sutil al pasar el mouse */
+        }
+        .quiz-option {
+            transition: all 0.2s;
+        }
+        .quiz-option:hover {
+            background-color: #f0f9ff;
+        }
+        .quiz-correct {
+            border-left: 4px solid var(--color-primary);
+            background-color: #e6f0ff !important;
+        }
+        .quiz-incorrect {
+            border-left: 4px solid var(--color-accent);
+            background-color: #fff4e6 !important;
+        }
+    </style>
+    <!-- Iconos Lucide (para botones y UI) -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        // Aseguramos la disponibilidad global de las funciones necesarias
+        window.createIcons = lucide.createIcons;
+        window.allIcons = lucide.icons;
+    </script>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Modal de Autenticación (Admin) -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 hidden justify-center items-center">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm card">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">🔒 Acceso de Administrador</h2>
+            <p class="text-sm text-gray-600 mb-6">Contraseña requerida para acceder al Panel de Edición.</p>
+            <input type="password" id="admin-password" placeholder="Contraseña (cnci2025)" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+            <button id="admin-login-button" class="w-full bg-primary text-white p-3 rounded-lg font-semibold hover:bg-primary-dark transition duration-150">Ingresar</button>
+            <button id="admin-close-modal" class="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition duration-150">Cerrar</button>
+            <p id="admin-error-message" class="text-accent text-sm mt-3 hidden"></p>
+        </div>
+    </div>
+
+    <!-- Panel de Administración -->
+    <div id="admin-panel" class="fixed inset-0 z-40 bg-gray-50 hidden">
+        <div class="flex h-full">
+            <!-- Barra Lateral de Gestión de Módulos (Admin) -->
+            <div class="w-80 bg-gray-800 text-white p-6 flex flex-col overflow-y-auto shadow-2xl">
+                <h2 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-3 flex justify-between items-center">
+                    ⚙️ Panel de Edición
+                    <button id="exit-admin-button" class="text-red-400 hover:text-red-300 text-sm font-normal bg-gray-700 px-3 py-1 rounded-full">Salir</button>
+                </h2>
+
+                <!-- Control de Módulos (Añadir/Guardar) -->
+                <div class="mb-6 space-y-2">
+                    <button id="add-module-button" class="w-full bg-accent hover:bg-accent-dark text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center transition duration-150 card">
+                        <i data-lucide="folder-plus" class="w-5 h-5 mr-2"></i> Nuevo Módulo
+                    </button>
+                    <button id="save-course-button" class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center transition duration-150 card">
+                        <i data-lucide="cloud-fog" class="w-5 h-5 mr-2"></i> Guardar Cambios (Nube)
+                    </button>
+                </div>
+
+                <!-- Lista de Módulos Arrastrable (Admin) -->
+                <h3 class="text-lg font-semibold mb-3 border-t pt-3 border-gray-700">📚 Estructura del Curso</h3>
+                <ul id="admin-module-list" class="space-y-2 flex-1">
+                    <!-- Los módulos se renderizarán aquí -->
+                </ul>
+            </div>
+
+            <!-- Área de Edición de Contenido (Admin) -->
+            <div class="flex-1 p-8 overflow-y-auto">
+                <h2 id="admin-content-title" class="text-3xl font-extrabold mb-6 text-gray-900">✏️ Selecciona un Elemento para editar.</h2>
+
+                <!-- EDITOR DE CONFIGURACIÓN GLOBAL -->
+                <div id="admin-global-config-editor" class="bg-white p-6 rounded-xl shadow mb-8 card">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center"><i data-lucide="globe" class="w-5 h-5 mr-2 text-primary"></i> Configuración General</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <label for="admin-app-title" class="block text-sm font-medium text-gray-700">Título del Curso</label>
+                            <input type="text" id="admin-app-title" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                        </div>
+                        <div>
+                            <label for="admin-logo-url" class="block text-sm font-medium text-gray-700">URL del Logo (Opcional)</label>
+                            <input type="url" id="admin-logo-url" placeholder="https://..." class="mt-1 block w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor de Lección (Metadatos/Bloques/Quiz) -->
+                <div id="admin-lesson-editor-group" class="hidden">
+                    <!-- Metadatos de la Lección Actual -->
+                    <div id="admin-metadata-editor" class="bg-white p-6 rounded-xl shadow mb-8 card">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">📑 Editar Metadatos</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="admin-lesson-title" class="block text-sm font-medium text-gray-700">Título de la Lección</label>
+                                <input type="text" id="admin-lesson-title" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                            </div>
+                            <div>
+                                <label for="admin-module-title" class="block text-sm font-medium text-gray-700">Título del Módulo Padre</label>
+                                <input type="text" id="admin-module-title" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor de Bloques (Lección) -->
+                    <div id="admin-block-editor" class="mb-8">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center"><i data-lucide="layout-grid" class="w-5 h-5 mr-2 text-primary"></i> Contenido de la Lección (Bloques)</h3>
+                        <div id="block-list-container" class="space-y-4 mb-8">
+                            <!-- Los bloques se renderizarán aquí -->
+                        </div>
+
+                        <div class="p-4 bg-gray-100 rounded-xl shadow-inner">
+                            <h3 class="text-lg font-bold mb-3 text-gray-700">➕ Añadir Nuevo Bloque</h3>
+                            <div class="flex flex-wrap gap-3">
+                                <button data-type="text" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="align-left" class="w-4 h-4 mr-2"></i> Texto</button>
+                                <button data-type="video" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="youtube" class="w-4 h-4 mr-2"></i> Video</button>
+                                <button data-type="image" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="image" class="w-4 h-4 mr-2"></i> Imagen</button>
+                                <button data-type="list" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="list" class="w-4 h-4 mr-2"></i> Lista</button>
+                                <button data-type="embed" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="code" class="w-4 h-4 mr-2"></i> Embed</button>
+                                <button data-type="flashcards" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="flip-horizontal-2" class="w-4 h-4 mr-2"></i> Flashcards</button>
+                                <button data-type="link" class="add-block-btn bg-white hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-full border flex items-center text-sm"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Botón de Enlace</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor Visual de Quiz (Lección) -->
+                    <div id="admin-quiz-editor" class="mt-8">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center"><i data-lucide="check-circle" class="w-5 h-5 mr-2 text-accent"></i> Evaluación Interactiva (Quiz)</h3>
+                        <div id="quiz-question-list" class="space-y-6">
+                            <!-- Las preguntas se renderizarán aquí -->
+                        </div>
+                        <button id="add-quiz-question-button" class="mt-4 w-full border border-dashed border-primary text-primary py-2 rounded-xl hover:bg-blue-50 transition duration-150 flex items-center justify-center">
+                            <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Añadir Pregunta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- FIN Panel de Administración -->
+
+    <!-- Diseño Principal (Student View) -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Barra Lateral de Navegación -->
+        <aside id="sidebar" class="sidebar w-64 bg-white p-6 flex flex-col shadow-2xl z-30 fixed lg:relative h-full">
+            <!-- Logo y Título Personalizado -->
+            <div class="mb-6 border-b pb-4">
+                <div id="app-logo" class="w-full flex justify-center mb-2">
+                    <!-- El logo se inyecta aquí -->
+                </div>
+                <h1 id="app-title" class="text-2xl font-extrabold text-gray-800 text-center">CoursePro</h1>
+            </div>
+
+            <!-- Barra de Progreso General -->
+            <div class="mb-6 p-3 bg-gray-50 rounded-lg">
+                <p class="text-sm font-semibold text-gray-600 mb-2 flex items-center">📈 Progreso General</p>
+                <div class="h-2 bg-gray-200 rounded-full">
+                    <div id="progress-bar" class="h-2 bg-primary rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                <p id="progress-text" class="text-xs text-gray-500 mt-1">0% completado</p>
+            </div>
+
+            <!-- Lista de Módulos del Curso -->
+            <div id="module-list" class="flex-1 overflow-y-auto space-y-4">
+                <!-- Los módulos del curso se inyectarán aquí -->
+            </div>
+
+            <!-- Botón de Configuración/Admin -->
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                <button id="open-admin-button" class="w-full text-gray-500 hover:text-primary transition duration-150 p-2 rounded-lg flex items-center justify-center">
+                    <i data-lucide="cog" class="w-5 h-5 mr-2"></i> Panel de Edición (Admin)
+                </button>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal del Curso -->
+        <main id="content-area" class="content-area flex-1 p-6 lg:p-10 overflow-y-auto">
+            <!-- Título de la Lección -->
+            <h2 id="lesson-title" class="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-4"></h2>
+
+            <!-- Breadcrumb y Título del Módulo -->
+            <p id="module-info" class="text-accent font-medium mb-6 flex items-center">
+                <i data-lucide="book-open" class="w-4 h-4 mr-2"></i> Selecciona una lección para comenzar.
+            </p>
+
+            <!-- Área de Contenido Dinámico (Bloques) -->
+            <div id="lesson-content-container" class="prose max-w-none bg-white p-6 sm:p-8 rounded-xl shadow-lg card">
+                <p class="text-gray-500">Cargando la estructura del curso... 🚀</p>
+            </div>
+
+            <!-- Área de Quiz -->
+            <div id="quiz-container" class="mt-10 bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-primary hidden card">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">📝 Evaluación de Módulo</h3>
+                <div id="quiz-questions-area" class="space-y-6">
+                    <!-- Las preguntas del quiz se inyectarán aquí -->
+                </div>
+                <button id="submit-quiz-button" class="mt-8 bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary-dark transition duration-150 card">Enviar Respuestas</button>
+                <div id="quiz-feedback" class="mt-4 p-4 rounded-lg hidden"></div>
+            </div>
+
+            <!-- Botón de Certificado (Al finalizar) -->
+            <div id="certificate-area" class="mt-10 p-8 bg-green-50 border-l-4 border-green-500 rounded-xl shadow-lg hidden justify-center items-center flex-col card">
+                <i data-lucide="award" class="w-12 h-12 text-green-600 mb-4 animate-bounce-slow"></i>
+                <h3 class="text-2xl font-bold text-green-800 mb-2">🎉 ¡Curso Completado!</h3>
+                <p class="text-lg text-green-700 mb-4">Has terminado todas las lecciones y evaluaciones.</p>
+                <button onclick="generateCertificate()" class="bg-green-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-green-700 transition duration-150 shadow-md card">
+                    Descargar Certificado
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ====================================================================
+        // FIREBASE GLOBAL VARIABLES AND INITIALIZATION
+        // ====================================================================
+
+        // Variables de entorno inyectadas por Canvas (MANDATORIO)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId = 'loading'; // ID del usuario actual (UID de Firebase)
+        let courseDocRef = null; // Referencia al documento de Firestore
+
+        // Estructura de datos inicial del curso (Fallback/Estructura base)
+        const initialCourseData = {
+            isAuthenticated: false,
+            appTitle: 'CoursePro: Orientación CNCI',
+            appLogoUrl: '', // URL del logo vacía por defecto
+            currentLessonId: 'lesson1_1',
+            modules: [
+                {
+                    id: 'module1',
+                    title: '1. Autoconocimiento Profesional 🧭',
+                    isComplete: false,
+                    lessons: [
+                        {
+                            id: 'lesson1_1',
+                            title: 'Lección 1.1: Tu Brújula Interna ✨',
+                            isComplete: false,
+                            content: [
+                                { type: 'text', content: '¡Bienvenido! El primer paso en tu carrera es el autoconocimiento. Aquí definirás tus valores, pasiones y habilidades clave.' },
+                                { type: 'video', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?si=J5Q-q-n32N3Q1z2p', description: 'Video: ¿Quién eres realmente? (Simulación)' },
+                                { type: 'list', items: ['Valores fundamentales', 'Habilidades transferibles', 'Intereses de carrera'], ordered: false },
+                                { type: 'text', content: 'Estos son los pilares sobre los que construirás un CV y perfil de LinkedIn impactantes.' },
+                                { type: 'link', text: 'Descarga Plantilla de Autoevaluación', url: 'https://placehold.co/pdf', style: 'primary' }
+                            ],
+                            quiz: {
+                                isPassed: false,
+                                questions: [
+                                    {
+                                        id: 'q1_1',
+                                        text: '¿Qué es el autoconocimiento en la orientación profesional?',
+                                        options: ['Conocer las empresas del mercado.', 'Entender tus propios valores y habilidades.', 'Aprender a programar.', 'Saber cómo funciona LinkedIn.'],
+                                        correctAnswer: 'Entender tus propios valores y habilidades.'
+                                    },
+                                    {
+                                        id: 'q1_2',
+                                        text: '¿Cuál de estos es un valor fundamental de carrera?',
+                                        options: ['El color de tu ropa.', 'La honestidad.', 'La marca de tu celular.', 'Tu velocidad al escribir.'],
+                                        correctAnswer: 'La honestidad.'
+                                    }
+                                ]
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 'module2',
+                    title: '2. CV y Carta de Presentación Impactantes 📝',
+                    isComplete: false,
+                    lessons: [
+                        {
+                            id: 'lesson2_1',
+                            title: 'Lección 2.1: Estructura del CV Ganador 🏆',
+                            isComplete: false,
+                            content: [
+                                { type: 'text', content: 'Un CV debe ser conciso y relevante para el puesto que buscas. Piensa en logros, no solo en responsabilidades.' },
+                                {
+                                    type: 'flashcards',
+                                    cards: [
+                                        { question: 'Regla de Oro del CV', answer: 'Máximo 2 páginas para profesionales experimentados.' },
+                                        { question: 'ATS significa...', answer: 'Applicant Tracking System (Sistema de Seguimiento de Candidatos).' }
+                                    ]
+                                },
+                            ],
+                            quiz: null
+                        },
+                    ]
+                },
+                {
+                    id: 'module3',
+                    title: '3. Dominando LinkedIn 🌐',
+                    isComplete: false,
+                    lessons: [
+                        {
+                            id: 'lesson3_1',
+                            title: 'Lección 3.1: Perfil Optimizado 👤',
+                            isComplete: false,
+                            content: [{ type: 'text', content: 'Tu perfil de LinkedIn es tu CV digital. Optimiza tu titular y extracto.' }],
+                            quiz: null
+                        }
+                    ]
+                },
+                {
+                    id: 'module4',
+                    title: '4. Entrevistas Exitosas ✅',
+                    isComplete: false,
+                    lessons: [
+                        {
+                            id: 'lesson4_1',
+                            title: 'Lección 4.1: Método STAR ⭐',
+                            isComplete: false,
+                            content: [
+                                { type: 'text', content: 'Usa el método STAR (Situación, Tarea, Acción, Resultado) para responder a preguntas conductuales.' },
+                                { type: 'embed', code: '<iframe src="https://forms.gle/xxxxxxxxxxxxxxxx" width="100%" height="500" frameborder="0"></iframe>', description: 'Simulador de Entrevista (Google Forms de ejemplo)' }
+                            ],
+                            quiz: null
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let courseData = JSON.parse(JSON.stringify(initialCourseData)); // Clonar la estructura inicial
+
+        async function initializeFirebase() {
+            try {
+                if (!firebaseConfig.apiKey) {
+                    throw new Error("Firebase configuration is missing.");
+                }
+
+                // 1. Inicializar Firebase
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // Para ver logs de Firebase
+
+                // 2. Autenticación (Custom Token o Anónimo)
+                let userCredential;
+                if (initialAuthToken) {
+                    userCredential = await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    userCredential = await signInAnonymously(auth);
+                }
+
+                // 3. Obtener el ID del usuario y configurar el documento
+                userId = userCredential.user.uid;
+                // Ruta: /artifacts/{appId}/users/{userId}/courseData/state
+                courseDocRef = doc(db, 'artifacts', appId, 'users', userId, 'courseData', 'state');
+
+                // 4. Configurar el listener de Firestore
+                setupFirestoreListener();
+
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                // Si Firebase falla, la aplicación usará la estructura inicial (initialCourseData)
+                userId = crypto.randomUUID(); // Fallback ID
+                renderStudentView();
+            }
+        }
+
+        function setupFirestoreListener() {
+            if (!courseDocRef) return;
+
+            // Escuchar cambios en tiempo real
+            onSnapshot(courseDocRef, (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    // Si el documento existe, usar los datos guardados
+                    const loadedData = docSnapshot.data();
+                    courseData.modules = loadedData.modules || initialCourseData.modules;
+                    courseData.currentLessonId = loadedData.currentLessonId || initialCourseData.currentLessonId;
+                    // Cargar nuevos campos editables
+                    courseData.appTitle = loadedData.appTitle || initialCourseData.appTitle;
+                    courseData.appLogoUrl = loadedData.appLogoUrl || initialCourseData.appLogoUrl;
+                    console.log('Datos del curso sincronizados desde Firestore.');
+                } else {
+                    // Si es la primera vez, cargar la estructura inicial y guardarla
+                    console.log('Documento no encontrado. Creando documento inicial en Firestore.');
+                    // Usamos la estructura completa, incluyendo title y logo
+                    saveCourseState(courseData);
+                }
+                // Re-renderizar la vista con los datos actualizados
+                renderStudentView();
+                // Si el panel de admin está abierto, re-renderizar también
+                if (courseData.isAuthenticated) {
+                    renderAdminView();
+                }
+
+            }, (error) => {
+                console.error("Error al escuchar cambios de Firestore:", error);
+            });
+        }
+
+        async function saveCourseState(dataToSave) {
+            if (!courseDocRef) {
+                console.error("Firestore no está inicializado. No se puede guardar.");
+                return;
+            }
+
+            try {
+                const data = {
+                    modules: dataToSave.modules,
+                    currentLessonId: dataToSave.currentLessonId,
+                    appTitle: dataToSave.appTitle, // Guardar el título
+                    appLogoUrl: dataToSave.appLogoUrl, // Guardar el logo
+                    updatedAt: new Date().toISOString()
+                };
+                await setDoc(courseDocRef, data);
+                console.log('Estado del curso guardado en Firestore.');
+                if (courseData.isAuthenticated) {
+                    // Usar un mensaje sutil en lugar de alert
+                    showTemporaryMessage('💾 Cambios guardados en la nube con éxito.');
+                }
+            } catch (e) {
+                console.error('Error al guardar el estado del curso en Firestore:', e);
+            }
+        }
+
+        function showTemporaryMessage(message) {
+            const tempDiv = document.createElement('div');
+            tempDiv.className = 'fixed bottom-5 right-5 bg-green-500 text-white p-4 rounded-lg shadow-xl z-50 transition-opacity duration-300';
+            tempDiv.textContent = message;
+            document.body.appendChild(tempDiv);
+            setTimeout(() => {
+                tempDiv.style.opacity = '0';
+                setTimeout(() => tempDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // ====================================================================
+        // GESTIÓN DE ESTADO Y DATOS DE LA APLICACIÓN
+        // ====================================================================
+
+        const ADMIN_PASSWORD = 'cnci2025';
+
+        // Elementos DOM (Mantener igual)
+        const DOMElements = {
+            // Student View
+            sidebar: document.getElementById('sidebar'),
+            appTitle: document.getElementById('app-title'), // Nuevo
+            appLogo: document.getElementById('app-logo'),   // Nuevo
+            moduleList: document.getElementById('module-list'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            lessonTitle: document.getElementById('lesson-title'),
+            moduleInfo: document.getElementById('module-info'),
+            lessonContentContainer: document.getElementById('lesson-content-container'),
+            quizContainer: document.getElementById('quiz-container'),
+            quizQuestionsArea: document.getElementById('quiz-questions-area'),
+            submitQuizButton: document.getElementById('submit-quiz-button'),
+            quizFeedback: document.getElementById('quiz-feedback'),
+            certificateArea: document.getElementById('certificate-area'),
+            // Admin Auth
+            adminAuthModal: document.getElementById('admin-auth-modal'),
+            adminPasswordInput: document.getElementById('admin-password'),
+            adminLoginButton: document.getElementById('admin-login-button'),
+            adminCloseModalButton: document.getElementById('admin-close-modal'),
+            adminErrorMessage: document.getElementById('admin-error-message'),
+            openAdminButton: document.getElementById('open-admin-button'),
+            // Admin Panel
+            adminPanel: document.getElementById('admin-panel'),
+            exitAdminButton: document.getElementById('exit-admin-button'),
+            saveCourseButton: document.getElementById('save-course-button'),
+            addModuleButton: document.getElementById('add-module-button'),
+            adminModuleList: document.getElementById('admin-module-list'),
+            adminContentTitle: document.getElementById('admin-content-title'),
+            // Nuevos campos de configuración global
+            adminAppTitle: document.getElementById('admin-app-title'),
+            adminLogoUrl: document.getElementById('admin-logo-url'),
+            // Grupo de edición de lección
+            adminLessonEditorGroup: document.getElementById('admin-lesson-editor-group'),
+            adminMetadataEditor: document.getElementById('admin-metadata-editor'),
+            adminLessonTitle: document.getElementById('admin-lesson-title'),
+            adminModuleTitle: document.getElementById('admin-module-title'),
+            adminBlockEditor: document.getElementById('admin-block-editor'),
+            blockListContainer: document.getElementById('block-list-container'),
+            addBlockButtons: document.querySelectorAll('.add-block-btn'),
+            adminQuizEditor: document.getElementById('admin-quiz-editor'),
+            quizQuestionList: document.getElementById('quiz-question-list'),
+            addQuizQuestionButton: document.getElementById('add-quiz-question-button'),
+        };
+
+        let currentAdminTarget = { moduleId: null, lessonId: null };
+
+        // ====================================================================
+        // UTILIDADES Y LÓGICA DE CURSO
+        // ====================================================================
+
+        function getLesson(id) {
+            for (const mod of courseData.modules) {
+                for (const lesson of mod.lessons) {
+                    if (lesson.id === id) {
+                        return { module: mod, lesson: lesson };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function getProgressPercentage() {
+            let totalLessons = 0;
+            let completedLessons = 0;
+
+            courseData.modules.forEach(mod => {
+                mod.lessons.forEach(lesson => {
+                    totalLessons++;
+                    if (lesson.isComplete) {
+                        completedLessons++;
+                    }
+                });
+            });
+
+            const percentage = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+            const allComplete = percentage === 100;
+            return { percentage, allComplete };
+        }
+
+        function isModuleLocked(module) {
+            // El primer módulo nunca está bloqueado
+            if (module.id === courseData.modules[0]?.id) return false;
+
+            // Encontrar el módulo anterior
+            const currentIndex = courseData.modules.findIndex(m => m.id === module.id);
+            if (currentIndex > 0) {
+                const prevModule = courseData.modules[currentIndex - 1];
+                return !prevModule.isComplete;
+            }
+            return true; // Si no es el primero y no se encuentra el anterior, bloquear por seguridad
+        }
+
+        function updateModuleCompletion(moduleId) {
+            const module = courseData.modules.find(m => m.id === moduleId);
+            if (!module) return;
+
+            const allLessonsComplete = module.lessons.every(l => l.isComplete);
+            module.isComplete = allLessonsComplete;
+            // Guardar en Firestore después de actualizar el estado local
+            saveCourseState(courseData);
+        }
+
+        function completeLesson(lessonId) {
+            const result = getLesson(lessonId);
+            if (result && !result.lesson.isComplete) {
+                result.lesson.isComplete = true;
+                updateModuleCompletion(result.module.id);
+                // NOTE: renderStudentView se llama automáticamente por el onSnapshot tras el save
+            }
+        }
+
+        // ====================================================================
+        // RENDERIZADO VISTA DEL ESTUDIANTE
+        // ====================================================================
+
+        function navigateToLesson(lessonId) {
+            const result = getLesson(lessonId);
+            if (!result) return;
+
+            if (isModuleLocked(result.module) && !courseData.isAuthenticated) {
+                console.log('Lección bloqueada. Termina el módulo anterior primero.');
+                return;
+            }
+
+            courseData.currentLessonId = lessonId;
+            // Guardar en Firestore el nuevo currentLessonId
+            saveCourseState(courseData);
+            renderStudentView(); // Renderizar inmediatamente para mejor UX
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderStudentView() {
+            const { module: currentModule, lesson: currentLesson } = getLesson(courseData.currentLessonId) || {};
+            const { percentage, allComplete } = getProgressPercentage();
+
+            // 0. Configuración Global (Título y Logo)
+            DOMElements.appTitle.textContent = courseData.appTitle;
+            DOMElements.appLogo.innerHTML = courseData.appLogoUrl ?
+                `<img src="${courseData.appLogoUrl}" alt="Logo del Curso" class="h-12 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/100x48/f4f7f9/808080?text=LOGO';">`
+                : `<i data-lucide="graduation-cap" class="w-10 h-10 text-primary"></i>`;
+
+            // 1. Barra de Progreso
+            DOMElements.progressBar.style.width = `${percentage}%`;
+            DOMElements.progressText.textContent = `${percentage}% completado`;
+
+            // 2. Títulos
+            if (currentLesson) {
+                DOMElements.lessonTitle.textContent = currentLesson.title;
+                DOMElements.moduleInfo.innerHTML = `<i data-lucide="book-open" class="w-4 h-4 mr-2"></i> Módulo ${currentModule.title}`;
+            } else {
+                // Estado inicial/sin lección seleccionada
+                DOMElements.lessonTitle.textContent = "¡Bienvenido a CoursePro! 🌟";
+                DOMElements.moduleInfo.innerHTML = `<i data-lucide="book-open" class="w-4 h-4 mr-2"></i> Selecciona una lección para comenzar.`;
+            }
+
+            // 3. Renderizar Contenido (Blocks)
+            renderLessonContent(currentLesson);
+
+            // 4. Renderizar Quiz
+            renderQuiz(currentLesson);
+
+            // 5. Renderizar Barra Lateral de Módulos
+            renderStudentSidebar(currentLesson);
+
+            // 6. Certificado
+            if (allComplete) {
+                DOMElements.certificateArea.classList.remove('hidden');
+                DOMElements.certificateArea.classList.add('flex');
+            } else {
+                DOMElements.certificateArea.classList.add('hidden');
+                DOMElements.certificateArea.classList.remove('flex');
+            }
+
+            // Recargar iconos de Lucide
+            if(typeof window.createIcons === 'function') {
+                window.createIcons({ icons: window.allIcons });
+            }
+        }
+
+        function renderStudentSidebar(currentLesson) {
+            DOMElements.moduleList.innerHTML = '';
+
+            courseData.modules.forEach(mod => {
+                const isLocked = isModuleLocked(mod) && !courseData.isAuthenticated;
+                const moduleEl = document.createElement('div');
+                moduleEl.className = `p-4 rounded-xl card transition duration-200 ${mod.isComplete ? 'bg-green-50 border-l-4 border-green-500 shadow-md' : isLocked ? 'bg-gray-100 opacity-75' : 'bg-white shadow-md hover:shadow-lg'}`;
+
+                let headerHtml = `
+                    <h4 class="font-bold text-gray-800 flex items-center mb-1">
+                        ${mod.title}
+                        ${mod.isComplete ? '<i data-lucide="check-circle" class="w-4 h-4 ml-2 text-green-500"></i>' : isLocked ? '<i data-lucide="lock" class="w-4 h-4 ml-2 text-gray-500"></i>' : ''}
+                    </h4>
+                    ${isLocked ? '<p class="text-xs text-accent italic">Completa el módulo anterior para desbloquear</p>' : ''}
+                `;
+                moduleEl.innerHTML += headerHtml;
+
+                const lessonList = document.createElement('ul');
+                lessonList.className = 'mt-3 space-y-1';
+
+                mod.lessons.forEach(lesson => {
+                    const isCurrent = currentLesson && lesson.id === currentLesson.id;
+                    const lessonEl = document.createElement('li');
+                    lessonEl.className = `text-sm py-1 px-2 rounded-lg transition duration-100 ${isCurrent ? 'bg-blue-100 text-primary font-semibold border-l-2 border-primary' : isLocked ? 'text-gray-500 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50 cursor-pointer'}`;
+                    lessonEl.textContent = lesson.title;
+                    lessonEl.onclick = () => isLocked ? null : navigateToLesson(lesson.id);
+
+                    if (lesson.isComplete && !isCurrent) {
+                         lessonEl.innerHTML = `<i data-lucide="check" class="w-3 h-3 inline mr-1 text-green-500"></i> ${lesson.title}`;
+                    }
+                    lessonList.appendChild(lessonEl);
+                });
+
+                moduleEl.appendChild(lessonList);
+                DOMElements.moduleList.appendChild(moduleEl);
+            });
+        }
+
+        function renderLessonContent(lesson) {
+            DOMElements.lessonContentContainer.innerHTML = '';
+
+            if (!lesson || !lesson.content) {
+                DOMElements.lessonContentContainer.innerHTML = '<p class="text-gray-500">Selecciona una lección de la barra lateral para ver el contenido. 📚</p>';
+                return;
+            }
+
+            lesson.content.forEach(block => {
+                const blockEl = document.createElement('div');
+                blockEl.className = 'mb-6 p-4 rounded-xl bg-white border border-gray-200';
+
+                switch (block.type) {
+                    case 'text':
+                        blockEl.className = 'mb-6'; // No bg for text
+                        blockEl.innerHTML = `<p class="text-gray-700 leading-relaxed">${block.content}</p>`;
+                        break;
+                    case 'video':
+                        blockEl.innerHTML = `
+                            <div class="aspect-w-16 aspect-h-9 overflow-hidden rounded-xl shadow-xl">
+                                <iframe class="w-full" height="315" src="${block.url}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-600 italic">▶️ ${block.description}</p>`;
+                        break;
+                    case 'image':
+                        blockEl.innerHTML = `
+                            <img src="${block.url}" alt="${block.description}" class="max-w-full h-auto rounded-xl shadow-xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/CCCCCC/000000?text=Imagen+No+Disponible';">
+                            <p class="mt-2 text-sm text-gray-600 italic">🖼️ ${block.description}</p>`;
+                        break;
+                    case 'list':
+                        const listTag = block.ordered ? 'ol' : 'ul';
+                        const listType = block.ordered ? 'list-decimal ml-5' : 'list-disc ml-5';
+                        blockEl.className = 'mb-6 bg-blue-50 border-l-4 border-primary p-4 rounded-r-xl';
+                        blockEl.innerHTML = `<${listTag} class="${listType} space-y-1 text-gray-700">` +
+                            block.items.map(item => `<li>${item}</li>`).join('') +
+                            `</${listTag}>`;
+                        break;
+                    case 'embed':
+                        blockEl.className = 'mb-6 p-0 overflow-hidden bg-white rounded-xl shadow-xl border border-gray-200';
+                        blockEl.innerHTML = block.code + `<p class="mt-2 p-4 text-sm text-gray-600 italic border-t border-gray-200">🔗 ${block.description}</p>`;
+                        break;
+                    case 'flashcards':
+                        blockEl.className = 'mb-6 bg-yellow-50 border-l-4 border-accent p-6 rounded-r-xl';
+                        blockEl.innerHTML = '<h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center"><i data-lucide="flip-horizontal-2" class="w-5 h-5 mr-2 text-accent"></i> Tarjetas de Repaso Rápido</h4>';
+                        block.cards.forEach((card, index) => {
+                            blockEl.innerHTML += `
+                                <div class="flashcard bg-white p-4 rounded-lg shadow-md mb-3 cursor-pointer hover:shadow-lg transition duration-150" onclick="this.querySelector('.back').classList.toggle('hidden'); this.querySelector('.front').classList.toggle('hidden');">
+                                    <div class="front font-semibold text-gray-800">❓ Pregunta: ${card.question}</div>
+                                    <div class="back text-gray-600 hidden mt-1 border-t pt-1">💡 Respuesta: ${card.answer}</div>
+                                </div>
+                            `;
+                        });
+                        break;
+                    case 'link':
+                        blockEl.className = 'mb-6 p-0 bg-transparent border-none';
+                        const styleClass = block.style === 'primary'
+                            ? 'bg-primary text-white hover:bg-primary-dark shadow-lg'
+                            : 'bg-accent text-white hover:bg-accent-dark shadow-md';
+                        blockEl.innerHTML = `
+                            <a href="${block.url}" target="_blank" class="inline-flex items-center font-semibold py-3 px-6 rounded-xl transition duration-150 ${styleClass} card">
+                                <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${block.text}
+                            </a>
+                        `;
+                        break;
+                }
+                DOMElements.lessonContentContainer.appendChild(blockEl);
+            });
+            if(typeof window.createIcons === 'function') {
+                window.createIcons({ icons: window.allIcons });
+            }
+        }
+
+        function renderQuiz(lesson) {
+            DOMElements.quizContainer.classList.add('hidden');
+            DOMElements.quizFeedback.classList.add('hidden');
+            DOMElements.quizFeedback.innerHTML = '';
+            DOMElements.submitQuizButton.onclick = () => checkQuiz(lesson);
+
+            if (!lesson || !lesson.quiz) {
+                return;
+            }
+
+            // Mostrar el Quiz si no está completado, o si está en modo admin
+            if (!lesson.isComplete || courseData.isAuthenticated) {
+                DOMElements.quizContainer.classList.remove('hidden');
+            } else {
+                return;
+            }
+
+            DOMElements.quizQuestionsArea.innerHTML = '';
+            DOMElements.submitQuizButton.textContent = 'Enviar Respuestas';
+            DOMElements.submitQuizButton.disabled = false;
+
+            // Si la lección está completada, mostrar solo la retroalimentación
+            if (lesson.isComplete && !courseData.isAuthenticated) {
+                DOMElements.submitQuizButton.disabled = true;
+                DOMElements.submitQuizButton.textContent = '¡Evaluación Completada!';
+                const feedbackText = `<p class="text-lg font-bold text-primary">✅ Lección Aprobada.</p>
+                                      <p class="text-sm text-gray-600">Puedes continuar con el siguiente tema.</p>`;
+                DOMElements.quizFeedback.innerHTML = feedbackText;
+                DOMElements.quizFeedback.className = 'mt-4 p-4 rounded-lg bg-blue-100 border border-primary';
+                DOMElements.quizFeedback.classList.remove('hidden');
+                return;
+            }
+
+
+            lesson.quiz.questions.forEach((q, qIndex) => {
+                const qEl = document.createElement('div');
+                qEl.className = 'bg-white p-5 rounded-xl shadow border border-gray-200';
+                qEl.innerHTML = `<p class="font-bold text-lg mb-4 text-gray-800">🤔 Pregunta ${qIndex + 1}: ${q.text}</p>`;
+
+                q.options.forEach((option, oIndex) => {
+                    const optionId = `q${qIndex}_o${oIndex}`;
+                    qEl.innerHTML += `
+                        <label for="${optionId}" class="flex items-center p-3 mb-2 rounded-lg border cursor-pointer quiz-option">
+                            <input type="radio" id="${optionId}" name="question_${q.id}" value="${option}" class="w-4 h-4 text-primary border-gray-300 focus:ring-primary mr-3">
+                            <span class="text-gray-700">${option}</span>
+                        </label>
+                    `;
+                });
+                DOMElements.quizQuestionsArea.appendChild(qEl);
+            });
+        }
+
+        function checkQuiz(lesson) {
+            const totalQuestions = lesson.quiz.questions.length;
+            let correctCount = 0;
+
+            lesson.quiz.questions.forEach((q, qIndex) => {
+                const selector = `input[name="question_${q.id}"]:checked`;
+                const selected = document.querySelector(selector);
+                const questionEl = DOMElements.quizQuestionsArea.children[qIndex];
+                const optionLabels = questionEl.querySelectorAll('label');
+
+                // Limpiar clases de feedback anteriores
+                optionLabels.forEach(label => label.classList.remove('quiz-correct', 'quiz-incorrect', 'bg-red-100', 'bg-emerald-100'));
+
+                if (selected && selected.value === q.correctAnswer) {
+                    correctCount++;
+                    selected.closest('label').classList.add('quiz-correct');
+                } else if (selected) {
+                    selected.closest('label').classList.add('quiz-incorrect');
+                    // Mostrar la respuesta correcta (en azul primario)
+                    optionLabels.forEach(label => {
+                        if (label.querySelector('span').textContent === q.correctAnswer) {
+                            label.classList.add('quiz-correct');
+                        }
+                    });
+                } else {
+                    // Marcar correcta si no se seleccionó nada
+                    optionLabels.forEach(label => {
+                        if (label.querySelector('span').textContent === q.correctAnswer) {
+                            label.classList.add('quiz-correct');
+                        }
+                    });
+                }
+
+                // Deshabilitar todas las opciones después de la revisión
+                questionEl.querySelectorAll('input').forEach(input => input.disabled = true);
+            });
+
+            const score = (correctCount / totalQuestions) * 100;
+            const isPassed = score >= 75; // Regla de aprobación simple
+
+            DOMElements.quizFeedback.classList.remove('hidden');
+            DOMElements.submitQuizButton.disabled = true;
+
+            let feedbackHtml;
+            if (isPassed) {
+                feedbackHtml = `<p class="text-lg font-bold text-green-700">🎉 ¡Felicidades! Has aprobado el quiz.</p>
+                                <p class="text-sm text-green-600">Puntuación: ${correctCount}/${totalQuestions} (${score.toFixed(0)}%). La lección ha sido marcada como completada.</p>`;
+                DOMElements.quizFeedback.className = 'mt-4 p-4 rounded-lg bg-green-100 border border-green-300';
+                // Marcar como completada y actualizar el estado en Firestore
+                completeLesson(lesson.id);
+            } else {
+                feedbackHtml = `<p class="text-lg font-bold text-accent">⚠️ Sigue practicando.</p>
+                                <p class="text-sm text-accent">Puntuación: ${correctCount}/${totalQuestions} (${score.toFixed(0)}%). Necesitas al menos 75% para aprobar. Repasa y vuelve a intentarlo.</p>`;
+                DOMElements.quizFeedback.className = 'mt-4 p-4 rounded-lg bg-yellow-100 border border-accent';
+            }
+            DOMElements.quizFeedback.innerHTML = feedbackHtml;
+        }
+
+        // Simulación de generación de certificado
+        function generateCertificate() {
+            showTemporaryMessage('¡Certificado generado! (Simulado) - Gracias por completar el curso. 📄');
+        }
+
+        // ====================================================================
+        // GESTIÓN DEL PANEL DE ADMINISTRACIÓN
+        // ====================================================================
+
+        function toggleAdminPanel(show) {
+            if (show) {
+                DOMElements.adminPanel.classList.remove('hidden');
+                DOMElements.adminPanel.classList.add('flex');
+                renderAdminView();
+            } else {
+                DOMElements.adminPanel.classList.add('hidden');
+                DOMElements.adminPanel.classList.remove('flex');
+                DOMElements.adminAuthModal.classList.add('hidden');
+                DOMElements.adminAuthModal.classList.remove('flex');
+            }
+        }
+
+        function renderAdminView() {
+            // 1. Cargar y enlazar Configuración Global
+            DOMElements.adminAppTitle.value = courseData.appTitle;
+            DOMElements.adminLogoUrl.value = courseData.appLogoUrl;
+
+            // Enlazar inputs de configuración global a courseData
+            DOMElements.adminAppTitle.oninput = (e) => courseData.appTitle = e.target.value;
+            DOMElements.adminLogoUrl.oninput = (e) => courseData.appLogoUrl = e.target.value;
+
+
+            // 2. Renderizar la lista de módulos editables
+            renderAdminModuleList();
+
+            // 3. Si hay una lección seleccionada, renderizar sus editores
+            const { moduleId, lessonId } = currentAdminTarget;
+            if (moduleId && lessonId) {
+                DOMElements.adminLessonEditorGroup.classList.remove('hidden');
+
+                const { module: currentModule, lesson: currentLesson } = getLesson(lessonId);
+                if (!currentLesson) return;
+
+                DOMElements.adminContentTitle.textContent = `✏️ Editando: ${currentLesson.title}`;
+
+                // Cargar metadatos
+                DOMElements.adminLessonTitle.value = currentLesson.title;
+                DOMElements.adminModuleTitle.value = currentModule.title;
+                DOMElements.adminLessonTitle.oninput = (e) => currentLesson.title = e.target.value;
+                DOMElements.adminModuleTitle.oninput = (e) => currentModule.title = e.target.value;
+
+                // Renderizar Editor de Bloques
+                renderBlockEditor(currentLesson);
+
+                // Renderizar Editor de Quiz
+                if (currentLesson.quiz) {
+                    DOMElements.adminQuizEditor.classList.remove('hidden');
+                    renderQuizEditor(currentLesson.quiz);
+                } else {
+                    // Opción para añadir Quiz si no existe
+                    DOMElements.adminQuizEditor.classList.remove('hidden');
+                    DOMElements.quizQuestionList.innerHTML = `<p class="text-gray-500 mb-4">Esta lección no tiene un quiz. Usa el botón "Añadir Pregunta" para crearlo.</p>`;
+                    DOMElements.addQuizQuestionButton.onclick = () => {
+                        currentLesson.quiz = { isPassed: false, questions: [] };
+                        renderAdminView();
+                    };
+                }
+
+            } else {
+                DOMElements.adminLessonEditorGroup.classList.add('hidden');
+                DOMElements.adminContentTitle.textContent = '✏️ Selecciona un Módulo/Lección para editar.';
+            }
+            if(typeof window.createIcons === 'function') {
+                window.createIcons({ icons: window.allIcons });
+            }
+        }
+
+        function renderAdminModuleList() {
+            DOMElements.adminModuleList.innerHTML = '';
+
+            courseData.modules.forEach((mod, modIndex) => {
+                const modItem = document.createElement('li');
+                modItem.className = 'bg-gray-700 p-3 rounded-xl shadow-lg mb-3 card';
+                modItem.innerHTML = `
+                    <div class="flex items-center justify-between text-white font-semibold mb-2">
+                        <span>${mod.title}</span>
+                        <div class="flex space-x-1">
+                            <button data-mod-id="${mod.id}" data-action="up" class="mod-reorder-btn bg-gray-600 hover:bg-gray-500 p-1 rounded-full"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button data-mod-id="${mod.id}" data-action="down" class="mod-reorder-btn bg-gray-600 hover:bg-gray-500 p-1 rounded-full"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                            <button data-mod-id="${mod.id}" data-action="delete" class="mod-delete-btn bg-red-600 hover:bg-red-700 p-1 rounded-full"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <ul class="ml-4 space-y-1 text-sm">
+                        ${mod.lessons.map(lesson => `
+                            <li class="p-2 rounded-lg cursor-pointer text-gray-300 hover:bg-gray-600 admin-lesson-select transition duration-100 ${lesson.id === currentAdminTarget.lessonId ? 'bg-gray-600 text-white font-bold' : ''}"
+                                data-mod-id="${mod.id}" data-lesson-id="${lesson.id}">
+                                ${lesson.title}
+                            </li>
+                        `).join('')}
+                        <li class="p-2 rounded-lg cursor-pointer text-accent hover:bg-gray-600 admin-lesson-add transition duration-100"
+                            data-mod-id="${mod.id}">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Añadir Lección
+                        </li>
+                    </ul>
+                `;
+                DOMElements.adminModuleList.appendChild(modItem);
+            });
+
+            // Reordenar Módulos
+            DOMElements.adminModuleList.querySelectorAll('.mod-reorder-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const id = btn.dataset.modId;
+                    const action = btn.dataset.action;
+                    const index = courseData.modules.findIndex(m => m.id === id);
+                    if (index === -1) return;
+
+                    if (action === 'up' && index > 0) {
+                        [courseData.modules[index], courseData.modules[index - 1]] = [courseData.modules[index - 1], courseData.modules[index]];
+                    } else if (action === 'down' && index < courseData.modules.length - 1) {
+                        [courseData.modules[index], courseData.modules[index + 1]] = [courseData.modules[index + 1], courseData.modules[index]];
+                    }
+                    renderAdminView();
+                };
+            });
+
+            // Borrar Módulos
+            DOMElements.adminModuleList.querySelectorAll('.mod-delete-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    if (!confirm('¿Seguro que quieres borrar este módulo y todas sus lecciones?')) return;
+                    const id = btn.dataset.modId;
+                    courseData.modules = courseData.modules.filter(m => m.id !== id);
+                    currentAdminTarget = { moduleId: null, lessonId: null };
+                    renderAdminView();
+                };
+            });
+
+            // Seleccionar Lección para Editar
+            DOMElements.adminModuleList.querySelectorAll('.admin-lesson-select').forEach(item => {
+                item.onclick = (e) => {
+                    currentAdminTarget = {
+                        moduleId: item.dataset.modId,
+                        lessonId: item.dataset.lessonId
+                    };
+                    renderAdminView();
+                };
+            });
+
+            // Añadir Lección
+            DOMElements.adminModuleList.querySelectorAll('.admin-lesson-add').forEach(item => {
+                item.onclick = (e) => {
+                    const mod = courseData.modules.find(m => m.id === item.dataset.modId);
+                    const newId = `lesson${mod.lessons.length + 1}_${Date.now()}`;
+                    const newLesson = {
+                        id: newId,
+                        title: `Nueva Lección ${mod.lessons.length + 1}`,
+                        isComplete: false,
+                        content: [{ type: 'text', content: 'Contenido de la nueva lección.' }],
+                        quiz: null
+                    };
+                    mod.lessons.push(newLesson);
+                    currentAdminTarget = { moduleId: mod.id, lessonId: newId };
+                    renderAdminView();
+                };
+            });
+        }
+
+        // ====================================================================
+        // RENDERIZADO Y LÓGICA DEL EDITOR DE BLOQUES
+        // ====================================================================
+
+        function renderBlockEditor(lesson) {
+            DOMElements.blockListContainer.innerHTML = '';
+            if (!lesson || !lesson.content) return;
+
+            lesson.content.forEach((block, index) => {
+                const blockCard = document.createElement('div');
+                blockCard.className = 'block-card bg-white p-4 rounded-xl shadow border border-gray-200';
+                blockCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b">
+                        <span class="font-bold text-sm text-primary">📦 ${index + 1}. Bloque: ${block.type.toUpperCase()}</span>
+                        <div class="flex space-x-1">
+                            <button data-index="${index}" data-action="up" class="block-reorder-btn bg-gray-100 hover:bg-gray-200 p-1 rounded-full"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button data-index="${index}" data-action="down" class="block-reorder-btn bg-gray-100 hover:bg-gray-200 p-1 rounded-full"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                            <button data-index="${index}" class="block-delete-btn bg-red-500 hover:bg-red-600 p-1 rounded-full text-white"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-editor-content">
+                        ${generateBlockEditorHTML(block, index)}
+                    </div>
+                `;
+                DOMElements.blockListContainer.appendChild(blockCard);
+            });
+
+            // Añadir Listeners para reordenar y borrar
+            DOMElements.blockListContainer.querySelectorAll('.block-reorder-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const index = parseInt(btn.dataset.index);
+                    const action = btn.dataset.action;
+                    if (action === 'up' && index > 0) {
+                        [lesson.content[index], lesson.content[index - 1]] = [lesson.content[index - 1], lesson.content[index]];
+                    } else if (action === 'down' && index < lesson.content.length - 1) {
+                        [lesson.content[index], lesson.content[index + 1]] = [lesson.content[index + 1], lesson.content[index]];
+                    }
+                    renderAdminView();
+                };
+            });
+
+            DOMElements.blockListContainer.querySelectorAll('.block-delete-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    if (!confirm('¿Seguro que quieres borrar este bloque?')) return;
+                    const index = parseInt(btn.dataset.index);
+                    lesson.content.splice(index, 1);
+                    renderAdminView();
+                };
+            });
+
+            // Añadir Listeners para cambios de input (Text, URL, etc.)
+            DOMElements.blockListContainer.querySelectorAll('textarea, input, select').forEach(input => {
+                input.oninput = (e) => {
+                    const index = parseInt(input.dataset.index);
+                    const key = input.dataset.key;
+                    const block = lesson.content[index];
+
+                    if (!block) return;
+
+                    if (key === 'listItems') {
+                        block.items = e.target.value.split('\n').filter(s => s.trim() !== '');
+                    } else if (key === 'ordered') {
+                        block.ordered = e.target.value === 'true';
+                    } else {
+                        block[key] = e.target.value;
+                    }
+                };
+            });
+            if(typeof window.createIcons === 'function') {
+                window.createIcons({ icons: window.allIcons });
+            }
+        }
+
+        function generateBlockEditorHTML(block, index) {
+            const baseInput = (key, label, value) => `
+                <div class="mb-3">
+                    <label class="block text-xs font-medium text-gray-700">${label}</label>
+                    <input type="text" data-index="${index}" data-key="${key}" value="${value || ''}" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                </div>
+            `;
+
+            const baseTextArea = (key, label, value) => `
+                <div class="mb-3">
+                    <label class="block text-xs font-medium text-gray-700">${label}</label>
+                    <textarea data-index="${index}" data-key="${key}" rows="4" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">${value || ''}</textarea>
+                </div>
+            `;
+
+            switch (block.type) {
+                case 'text':
+                    return baseTextArea('content', 'Contenido de Texto (Párrafo)', block.content);
+
+                case 'video':
+                case 'image':
+                    return `
+                        ${baseInput('url', 'URL (Video/Imagen)', block.url)}
+                        ${baseInput('description', 'Descripción/Título (Alt)', block.description)}`;
+
+                case 'list':
+                    return `
+                        ${baseTextArea('listItems', 'Items de la Lista (Un item por línea)', block.items.join('\n'))}
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-gray-700">Tipo de Lista</label>
+                            <select data-index="${index}" data-key="ordered" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                <option value="false" ${!block.ordered ? 'selected' : ''}>Sin Orden (Bullets)</option>
+                                <option value="true" ${block.ordered ? 'selected' : ''}>Ordenada (Números)</option>
+                            </select>
+                        </div>
+                    `;
+                case 'embed':
+                    return `
+                        ${baseTextArea('code', 'Código de Incrustación (HTML/Iframe)', block.code)}
+                        ${baseInput('description', 'Descripción (Ej: Google Form, Mapa)', block.description)}
+                    `;
+                case 'flashcards':
+                    // Implementación simplificada para Flashcards: Editor JSON o Textarea de Q/A
+                    const { lesson } = getLesson(currentAdminTarget.lessonId);
+                    const cards = lesson.content[index].cards;
+
+                    let cardsHtml = '';
+                    cards.forEach((card, cardIndex) => {
+                        cardsHtml += `
+                            <div class="flex space-x-2 mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                <input type="text" placeholder="Pregunta" value="${card.question}"
+                                    oninput="lesson.content[${index}].cards[${cardIndex}].question = this.value" class="flex-1 p-1 border rounded-lg text-sm focus:ring-accent focus:border-accent">
+                                <input type="text" placeholder="Respuesta" value="${card.answer}"
+                                    oninput="lesson.content[${index}].cards[${cardIndex}].answer = this.value" class="flex-1 p-1 border rounded-lg text-sm focus:ring-accent focus:border-accent">
+                                <button onclick="lesson.content[${index}].cards.splice(${cardIndex}, 1); renderAdminView();" class="text-red-500 hover:text-red-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+                        `;
+                    });
+
+                    return `
+                        <label class="block text-xs font-medium text-gray-700 mb-2">Tarjetas (Pregunta/Respuesta)</label>
+                        ${cardsHtml}
+                        <button onclick="lesson.content[${index}].cards.push({question: 'Nueva Pregunta', answer: 'Nueva Respuesta'}); renderAdminView();"
+                            class="mt-2 w-full border border-dashed border-primary text-primary py-1 rounded-lg hover:bg-blue-50 text-sm">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Añadir Tarjeta
+                        </button>
+                    `;
+
+                case 'link':
+                    return `
+                        ${baseInput('text', 'Texto del Botón', block.text)}
+                        ${baseInput('url', 'URL de Destino', block.url)}
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-gray-700">Estilo</label>
+                            <select data-index="${index}" data-key="style" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                <option value="primary" ${block.style === 'primary' ? 'selected' : ''}>Primario (Azul)</option>
+                                <option value="secondary" ${block.style === 'secondary' ? 'selected' : ''}>Acento (Naranja)</option>
+                            </select>
+                        </div>
+                    `;
+                default:
+                    return `<p class="text-red-500">Tipo de bloque desconocido: ${block.type}</p>`;
+            }
+        }
+
+        // ====================================================================
+        // LÓGICA DEL EDITOR DE QUIZ VISUAL
+        // ====================================================================
+
+        function renderQuizEditor(quiz) {
+            DOMElements.quizQuestionList.innerHTML = '';
+            DOMElements.addQuizQuestionButton.onclick = () => addQuizQuestion(quiz); // Reestablecer listener
+
+            quiz.questions.forEach((q, qIndex) => {
+                const qCard = document.createElement('div');
+                qCard.className = 'bg-white p-5 rounded-xl shadow border border-gray-200 card';
+                qCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <span class="font-bold text-lg text-gray-800">✍️ Pregunta ${qIndex + 1}</span>
+                        <button onclick="quiz.questions.splice(${qIndex}, 1); renderAdminView();" class="text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </div>
+                    <textarea rows="2" placeholder="Texto de la Pregunta" oninput="quiz.questions[${qIndex}].text = this.value"
+                        class="w-full p-2 mb-4 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">${q.text}</textarea>
+                    <p class="font-semibold text-sm mb-2 text-gray-700">Opciones (Marca la correcta):</p>
+                    <div id="options-list-${qIndex}">
+                        ${q.options.map((option, oIndex) => `
+                            <div class="flex items-center space-x-2 mb-2">
+                                <input type="radio" name="correct_q${qIndex}" id="correct_q${qIndex}_o${oIndex}" value="${option}"
+                                    ${option === q.correctAnswer ? 'checked' : ''}
+                                    onclick="quiz.questions[${qIndex}].correctAnswer = this.value"
+                                    class="w-4 h-4 text-emerald-500 focus:ring-emerald-500">
+                                <input type="text" placeholder="Opción ${oIndex + 1}" value="${option}"
+                                    oninput="updateQuizOption(${qIndex}, ${oIndex}, this.value)"
+                                    class="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-accent focus:border-accent">
+                                <button onclick="deleteQuizOption(${qIndex}, ${oIndex});" class="text-red-500 hover:text-red-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button onclick="addQuizOption(${qIndex});" class="mt-2 text-primary text-sm hover:underline"><i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Añadir Opción</button>
+                `;
+                DOMElements.quizQuestionList.appendChild(qCard);
+            });
+            if(typeof window.createIcons === 'function') {
+                window.createIcons({ icons: window.allIcons });
+            }
+        }
+
+        // Helper para añadir una pregunta (llamado por el listener)
+        function addQuizQuestion(quiz) {
+            quiz.questions.push({
+                id: `q${quiz.questions.length + 1}_${Date.now()}`,
+                text: 'Nueva Pregunta sin Título',
+                options: ['Opción A', 'Opción B', 'Opción C'],
+                correctAnswer: 'Opción A'
+            });
+            renderAdminView();
+        }
+
+        // Helper para actualizar una opción y la respuesta correcta si es necesario (expuesto globalmente para onClick/onInput)
+        window.updateQuizOption = (qIndex, oIndex, newValue) => {
+            const { lesson } = getLesson(currentAdminTarget.lessonId);
+            const quiz = lesson.quiz;
+
+            if (quiz.questions[qIndex].options[oIndex] === quiz.questions[qIndex].correctAnswer) {
+                quiz.questions[qIndex].correctAnswer = newValue;
+            }
+            quiz.questions[qIndex].options[oIndex] = newValue;
+        };
+
+        window.deleteQuizOption = (qIndex, oIndex) => {
+            const { lesson } = getLesson(currentAdminTarget.lessonId);
+            const quiz = lesson.quiz;
+
+            if (quiz.questions[qIndex].options.length <= 2) {
+                showTemporaryMessage('Debe haber al menos 2 opciones por pregunta.');
+                return;
+            }
+
+            // Si se borra la correcta, limpiar la respuesta correcta
+            if (quiz.questions[qIndex].options[oIndex] === quiz.questions[qIndex].correctAnswer) {
+                quiz.questions[qIndex].correctAnswer = '';
+            }
+
+            quiz.questions[qIndex].options.splice(oIndex, 1);
+            renderAdminView();
+        };
+
+        window.addQuizOption = (qIndex) => {
+            const { lesson } = getLesson(currentAdminTarget.lessonId);
+            const quiz = lesson.quiz;
+            quiz.questions[qIndex].options.push(`Nueva Opción ${quiz.questions[qIndex].options.length + 1}`);
+            renderAdminView();
+        };
+
+        // ====================================================================
+        // EVENT LISTENERS PRINCIPALES
+        // ====================================================================
+
+        // 1. Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            // Iniciar Firebase y el listener de Firestore
+            initializeFirebase();
+
+            // Asignar listeners a botones de Admin
+            DOMElements.openAdminButton.onclick = () => {
+                DOMElements.adminAuthModal.classList.remove('hidden');
+                DOMElements.adminAuthModal.classList.add('flex');
+                DOMElements.adminPasswordInput.value = '';
+                DOMElements.adminPasswordInput.focus();
+            };
+
+            DOMElements.adminCloseModalButton.onclick = () => toggleAdminPanel(false);
+
+            DOMElements.exitAdminButton.onclick = () => {
+                courseData.isAuthenticated = false;
+                toggleAdminPanel(false);
+                renderStudentView();
+            };
+
+            // *** SINCRONIZACIÓN AUTOMÁTICA AL GUARDAR (CONFIRMADO) ***
+            DOMElements.saveCourseButton.onclick = () => {
+                // El administrador guarda los cambios en la estructura del curso
+                // Esto incluye módulos, lecciones, QUIZ, título y logo.
+                saveCourseState(courseData);
+                // El listener de onSnapshot se encargará del re-renderizado
+            };
+
+            DOMElements.addModuleButton.onclick = () => {
+                const newId = `module${courseData.modules.length + 1}_${Date.now()}`;
+                const newModule = {
+                    id: newId,
+                    title: `Nuevo Módulo ${courseData.modules.length + 1} 🆕`,
+                    isComplete: false,
+                    lessons: [{
+                        id: 'lesson_new_1',
+                        title: 'Introducción',
+                        isComplete: false,
+                        content: [{ type: 'text', content: 'Contenido del nuevo módulo.' }],
+                        quiz: null
+                    }]
+                };
+                courseData.modules.push(newModule);
+                renderAdminView();
+            };
+
+            // Listener para el login (Enter o click)
+            const handleLogin = () => {
+                const password = DOMElements.adminPasswordInput.value;
+                if (password === ADMIN_PASSWORD) {
+                    courseData.isAuthenticated = true;
+                    DOMElements.adminErrorMessage.classList.add('hidden');
+                    DOMElements.adminAuthModal.classList.add('hidden');
+                    DOMElements.adminAuthModal.classList.remove('flex');
+                    toggleAdminPanel(true);
+                } else {
+                    DOMElements.adminErrorMessage.textContent = 'Contraseña incorrecta. 🛑';
+                    DOMElements.adminErrorMessage.classList.remove('hidden');
+                }
+            };
+            DOMElements.adminLoginButton.onclick = handleLogin;
+            DOMElements.adminPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+
+            // Listener para añadir bloques
+            document.querySelectorAll('.add-block-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const { lesson } = getLesson(currentAdminTarget.lessonId);
+                    if (!lesson) return;
+
+                    const type = btn.dataset.type;
+                    let newBlock;
+
+                    switch (type) {
+                        case 'text': newBlock = { type: 'text', content: 'Nuevo bloque de texto.' }; break;
+                        case 'video': newBlock = { type: 'video', url: 'https://www.youtube.com/embed/xxxxxxxxxxx', description: 'Título del video' }; break;
+                        case 'image': newBlock = { type: 'image', url: 'https://placehold.co/600x400/CCCCCC/000000?text=Nueva+Imagen', description: 'Descripción de la imagen' }; break;
+                        case 'list': newBlock = { type: 'list', items: ['Item 1', 'Item 2'], ordered: false }; break;
+                        case 'embed': newBlock = { type: 'embed', code: '<iframe src="URL_AQUI"></iframe>', description: 'Embed de Google Forms/Herramienta Externa' }; break;
+                        case 'flashcards': newBlock = { type: 'flashcards', cards: [{ question: 'Q1', answer: 'A1' }] }; break;
+                        case 'link': newBlock = { type: 'link', text: 'Botón de Enlace', url: 'https://google.com', style: 'primary' }; break;
+                    }
+                    lesson.content.push(newBlock);
+                    renderAdminView();
+                };
+            });
+
+            // Listener para añadir preguntas de Quiz (General)
+            DOMElements.addQuizQuestionButton.onclick = () => {
+                const { lesson } = getLesson(currentAdminTarget.lessonId);
+                if (!lesson) {
+                    showTemporaryMessage('Selecciona una lección para añadir un quiz.');
+                    return;
+                }
+                if (!lesson.quiz) {
+                    lesson.quiz = { isPassed: false, questions: [] };
+                }
+                addQuizQuestion(lesson.quiz);
+            };
+        });
+    </script>
+</body>
+</html>
