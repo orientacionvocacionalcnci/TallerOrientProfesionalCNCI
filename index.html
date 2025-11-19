@@ -450,25 +450,41 @@
             });
         }
 
-        async function saveCourseState(dataToSave) {
-            if (!courseDocRef) {
-                console.error("Firestore no está inicializado. No se puede guardar.");
-                return;
+            // FUNCIÓN CORREGIDA: Declarar como 'async'
+            async function handleAdminSave() { 
+            // 1. Actualizar metadatos globales
+            courseData.appTitle = DOMElements.adminAppTitle.value;
+            courseData.appLogoUrl = DOMElements.adminAppLogoUrl.value;
+
+            // 2. Actualizar metadatos de la lección (si hay una seleccionada)
+            if (currentAdminTarget.type === 'lesson') {
+                const { lesson } = getLesson(currentAdminTarget.lessonId);
+                if (lesson) {
+                    lesson.title = DOMElements.adminLessonTitle.value;
+                    lesson.description = DOMElements.adminLessonDescription.value;
+                }
             }
 
+            // AHORA: Llamada crucial para sincronizar el estado local (courseData) con Firebase
             try {
-                const data = {
-                    modules: dataToSave.modules,
-                    currentLessonId: dataToSave.currentLessonId,
-                    appTitle: dataToSave.appTitle, // Guardar el título
-                    appLogoUrl: dataToSave.appLogoUrl, // Guardar el logo
-                    updatedAt: new Date().toISOString()
-                };
-                await setDoc(courseDocRef, data);
-                console.log('Estado del curso guardado en Firestore.');
-                if (courseData.isAuthenticated) {
-                    // Usar un mensaje sutil en lugar de alert
-                    showTemporaryMessage('💾 Cambios guardados en la nube con éxito.');
+                // Deshabilitar botón temporalmente para evitar clics múltiples
+                DOMElements.adminSaveButton.disabled = true;
+                showTemporaryMessage('Sincronizando cambios con Firebase...', 'info');
+                
+                // --- CAMBIO CLAVE: Usar 'await' para esperar la sincronización ---
+                await saveCourseState(courseData); 
+                // ----------------------------------------------------------------
+
+                showTemporaryMessage('¡Cambios guardados y sincronizados exitosamente!', 'success');
+            } catch (error) {
+                console.error('Error al guardar desde Admin:', error);
+                showTemporaryMessage('Error al sincronizar con Firebase.', 'error');
+            } finally {
+                DOMElements.adminSaveButton.disabled = false;
+            }
+
+            // Desbloqueo de controles y re-renderizado
+            renderAdminView();
                 }
             } catch (e) {
                 console.error('Error al guardar el estado del curso en Firestore:', e);
