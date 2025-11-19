@@ -263,8 +263,16 @@
 
         // Variables de entorno inyectadas por Canvas (MANDATORIO)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // CÓDIGO CORREGIDO (Usa la configuración que proporcionaste directamente)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4J5cEDUjKcIgKdFYZ2LVus9-nAY8Bxhw",
+            authDomain: "tallerorientprofesionalcnci.firebaseapp.com",
+            projectId: "tallerorientprofesionalcnci",
+            storageBucket: "tallerorientprofesionalcnci.firebasestorage.app",
+            messagingSenderId: "333030718250",
+            appId: "1:333030718250:web:46d0715322cf4f41dfbc53",
+            // No necesitamos measurementId aquí, pero si quieres incluirlo, no hay problema.
+        };
 
         let app;
         let db;
